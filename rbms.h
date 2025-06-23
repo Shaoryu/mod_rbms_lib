@@ -11,7 +11,7 @@ class rbms {
         void can_read();
         float pid(float T,short rpm_now, short set_speed,float *delta_rpm_pre,float *ie,float KP=25,float KI=10, float KD=0);
         void spd_control(int* set_speed,int* motor);
-        bool pidflag;
+        bool pidflag=true;
         
     private:
 
