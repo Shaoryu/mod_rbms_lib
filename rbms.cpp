@@ -109,17 +109,19 @@ void rbms::spd_control(int* set_speed,int* motor){//速度制御用関数
     }
     
     while(1){
-        for(int id=0;id<_motor_num;id++){
-            if(_msg.id==0x201+id){//esc idごとに受信データ割り振り
-                CANMessage msg=_msg;
-                rbms_read(msg,&rotation[id],&speed[id]);//data変換
-                if(_motor_type){
-                    motor[id] = (int)pid(tm[id].read(),speed[id]/19,set_speed[id],&delta_rpm_pre[id],&ie[id]);
-                }else{
-                    motor[id] = (int)pid(tm[id].read(),speed[id]/36,set_speed[id],&delta_rpm_pre[id],&ie[id],15,6);
+        if(pidflag){
+            for(int id=0;id<_motor_num;id++){
+                if(_msg.id==0x201+id){//esc idごとに受信データ割り振り
+                    CANMessage msg=_msg;
+                    rbms_read(msg,&rotation[id],&speed[id]);//data変換
+                    if(_motor_type){
+                        motor[id] = (int)pid(tm[id].read(),speed[id]/19,set_speed[id],&delta_rpm_pre[id],&ie[id]);
+                    }else{
+                        motor[id] = (int)pid(tm[id].read(),speed[id]/36,set_speed[id],&delta_rpm_pre[id],&ie[id],15,6);
+                    }
+                    tm[id].reset();//timer reset
+                    if(motor[id]>_motor_max){motor[id]=_motor_max;}else if(motor[id]<-_motor_max){motor[id]=-_motor_max;}//上限確認超えてた場合は上限値にset
                 }
-                tm[id].reset();//timer reset
-                if(motor[id]>_motor_max){motor[id]=_motor_max;}else if(motor[id]<-_motor_max){motor[id]=-_motor_max;}//上限確認超えてた場合は上限値にset
             }
         }
         ThisThread::sleep_for(3ms);
