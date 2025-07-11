@@ -1,5 +1,8 @@
 #include "rbms.h"
 #include "mbed.h"
+#include <cmath>
+#include<stdlib.h>
+
 rbms::rbms(CAN &can,bool motor_type,int motor_num)
     : _can(can),_motor_type(motor_type),_motor_num(motor_num){
     if(_motor_type){
@@ -13,11 +16,28 @@ rbms::rbms(CAN &can,bool motor_type,int motor_num)
     }
 }
 
+rbms::rbms(CAN &can,bool* motor_type,int motor_num)
+    : _can(can),_motor_type_pointer(motor_type),_motor_num(motor_num){
+    _motor_max_po = (int*)malloc(_motor_num*sizeof(int));
+    for(int i=0;i<_motor_num;i++){
+        if(_motor_type_pointer[i]){
+            _motor_max_po[i]=16384;//m3508
+        }else{
+            _motor_max_po[i]=10000;//m2006
+        }
+        //printf("%d\r\n",_motor_max_po[i]);
+    }
+    if(_motor_num<=8){
+        _can.frequency(1000000); // CANのビットレートを指定
+        _can.mode(CAN::Normal); // CANのモードをNormalに設定
+    }
+}
+
 int rbms::rbms_send(int* motor) {//motorへ制御信号を送信する関数
     char _byte[_motor_num*2];//byteデータ変換用
     int _a=0;
     for(int i=0;i<_motor_num;i++){  //int dataを2byteに分割
-        if(motor[i]>_motor_max)return 0;//入力値がmotor上限以上の場合return0
+        if(motor[i]>_motor_max_po[i])return 0;//入力値がmotor上限以上の場合return0
         _byte[_a++] = (char)(motor[i] >> 8); // int値の上位8ビットをcharに変換
         _byte[_a++] = (char)(motor[i] & 0xFF); // int値の下位8ビットをcharに変換
     }
@@ -59,7 +79,7 @@ int rbms::rbms_send(int* motor) {//motorへ制御信号を送信する関数
 
 void rbms::rbms_read(CANMessage &msg, short *rotation,short *speed) {//motorからの受信データを変換する関数
             _r = (msg.data[0] << 8) | (msg.data[1] & 0xff);//2byteに分割されているdataを結合
-            _rotation = (float)_r / 8191 * 360;//0-8191=0-360°
+            _rotation = (float)_r / 8192 * 360;//8192=360°
             *rotation=_rotation;
  
             _speed = (msg.data[2] << 8) | (msg.data[3] & 0xff);
@@ -119,7 +139,7 @@ void rbms::spd_control(int* set_speed,int* motor){//速度制御用関数
                     motor[id] = (int)pid(tm[id].read(),speed[id]/36,set_speed[id],&delta_rpm_pre[id],&ie[id],15,6);
                 }
                 tm[id].reset();//timer reset
-                if(motor[id]>_motor_max){motor[id]=_motor_max;}else if(motor[id]<-_motor_max){motor[id]=-_motor_max;}//上限確認超えてた場合は上限値にset
+                if(motor[id]>_motor_max_po[id]){motor[id]=_motor_max_po[id];}else if(motor[id]<-_motor_max_po[id]){motor[id]=-_motor_max_po[id];}//上限確認超えてた場合は上限値にset
             }
         }
         ThisThread::sleep_for(3ms);
