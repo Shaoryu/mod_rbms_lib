@@ -16,9 +16,9 @@ class rbms {
 
         CANMessage _canMessage,_canMessage2,_msg;
         CAN &_can;
-        bool* _motor_type;//if 0 m2006,if 1 m3508
+        bool* _motor_type;//if 10000 m2006,if 16384 m3508
         int _motor_num;
-        int* _motor_max;
+        int*_motor_max;
         unsigned short _r;
         int _rotation;
         int _speed;
