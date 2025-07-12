@@ -1,7 +1,10 @@
 #include "rbms.h"
 #include "mbed.h"
+#include <cstdlib>
+
 rbms::rbms(CAN &can,bool* motor_type,int motor_num)
     : _can(can),_motor_type(motor_type),_motor_num(motor_num){
+    _motor_max=(int*)malloc(sizeof(int)*_motor_num);
     for(int i=0;i<_motor_num;i++){
         if(_motor_type[i]){
             _motor_max[i]=16384;//m3508
@@ -115,7 +118,7 @@ void rbms::spd_control(int* set_speed,int* motor){//速度制御用関数
             if(_msg.id==0x201+id){//esc idごとに受信データ割り振り
                 CANMessage msg=_msg;
                 rbms_read(msg,&rotation[id],&speed[id]);//data変換
-                if(_motor_type[id]){
+                if(_motor_type){
                     motor[id] = (int)pid(tm[id].read(),speed[id]/19,set_speed[id],&delta_rpm_pre[id],&ie[id]);
                 }else{
                     motor[id] = (int)pid(tm[id].read(),speed[id]/36,set_speed[id],&delta_rpm_pre[id],&ie[id],15,6);
