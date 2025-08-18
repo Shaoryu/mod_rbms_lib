@@ -115,7 +115,7 @@ void rbms::spd_control(int* set_speed,int* motor){//速度制御用関数
             if(_msg.id==0x201+id){//esc idごとに受信データ割り振り
                 CANMessage msg=_msg;
                 rbms_read(msg,&rotation[id],&speed[id]);//data変換
-                //chrono::duration<float>(tm[id].elapsed_time()).count();
+                //chrono::duration<float>(tm[id].elapsed_time()).count();//コピペ用
                 if(_motor_type[id]){
                     motor[id] = (int)pid(chrono::duration<float>(tm[id].elapsed_time()).count(),speed[id]/19,set_speed[id],&delta_rpm_pre[id],&ie[id]);
                 }else{
