@@ -1,6 +1,7 @@
 #include "rbms.h"
 #include "mbed.h"
 #include <cstdlib>
+#include <cmath>
 
 rbms::rbms(CAN &can,bool* motor_type,int motor_num)
     : _can(can),_motor_type(motor_type),_motor_num(motor_num){
@@ -41,7 +42,9 @@ int rbms::rbms_send(int* motor) {//motorへ制御信号を送信する関数
     char _byte[_motor_num*2];//byteデータ変換用
     int _a=0;
     for(int i=0;i<_motor_num;i++){  //int dataを2byteに分割
+
         if(motor[i]>_motor_max[i])return 0;//入力値がmotor上限以上の場合return0
+
         _byte[_a++] = (char)(motor[i] >> 8); // int値の上位8ビットをcharに変換
         _byte[_a++] = (char)(motor[i] & 0xFF); // int値の下位8ビットをcharに変換
     }
@@ -143,7 +146,9 @@ void rbms::spd_control(int* set_speed,int* motor){//速度制御用関数
                     motor[id] = (int)pid(tm[id].read(),speed[id]/36,set_speed[id],&delta_rpm_pre[id],&ie[id],15,6);
                 }
                 tm[id].reset();//timer reset
+
                 if(motor[id]>_motor_max[id]){motor[id]=_motor_max[id];}else if(motor[id]<-_motor_max[id]){motor[id]=-_motor_max[id];}//上限確認超えてた場合は上限値にset
+
             }
         }
         ThisThread::sleep_for(3ms);
